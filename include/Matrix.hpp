@@ -5,6 +5,7 @@
 #include <cassert>
 
 #include "Math.hpp"
+#include "Polynomial.hpp"
 #include "Definition.hpp"
 #include "CustomFormatter.hpp"
 
