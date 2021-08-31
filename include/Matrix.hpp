@@ -1,11 +1,12 @@
 #pragma once
 
 #include <array>
+#include <tuple>
 #include <cassert>
-#include <iomanip>
-#include <algorithm>
 
-#include "Helper.hpp"
+#include "Math.hpp"
+#include "Definition.hpp"
+#include "CustomFormatter.hpp"
 
 namespace cte::mat {
 
@@ -198,20 +199,6 @@ struct Matrix {
         return static_cast<ArithmeticType>(result);
     }
 
-    constexpr ArithmeticType determinantLeibniz() const {
-        assert(Cols == Rows);
-        ArithmeticType result = 0, temp;
-        auto permutations = cte::utils::computePermutations<Rows>();
-        for (std::size_t index = 0; index < permutations.size(); index++) {
-            temp = 1;
-            for (std::size_t pIndex = 0; pIndex < permutations[index].size(); pIndex++) {
-                temp *= mData[pIndex][permutations[index][pIndex]];
-            }
-            result += permutationSign(permutations[index]) * temp;
-        }
-        return result;
-    }
-
     constexpr Matrix<ArithmeticType, Cols, Rows> transpose() const {
         Matrix<ArithmeticType, Cols, Rows> result;
         for (std::size_t row = 0; row < Rows; row++) {
@@ -347,26 +334,11 @@ struct Matrix {
         return result;
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const Matrix& matrix) {
-        std::streamsize ss = os.precision();
-        for (std::size_t row = 0; row < Rows; row++) {
-            for (std::size_t col = 0; col < Cols; col++) {
-                os << std::fixed << std::setprecision(2) << matrix[row][col] << ' ';
-            }
-            os << '\n';
-        }
-        os << std::setprecision(ss);
-        return os;
-    }
-
     constexpr auto QRDecomposition() const;
 
-private:
+public:
     std::array<std::array<ArithmeticType, Cols>, Rows> mData;
 };
-
-template<typename... Types, size_t... Sizes>
-Matrix(Types (&&...arr)[Sizes]) -> Matrix<std::common_type_t<Types...>, sizeof...(Sizes), std::get<0>(std::forward_as_tuple(Sizes...))>;
 
 template<Arithmetic AT1, std::size_t R1, std::size_t C1, Arithmetic AT2, std::size_t R2, std::size_t C2>
 struct QRType {
@@ -389,9 +361,6 @@ private:
     Matrix<AT1, R1, C1> mOrthogonal;
     Matrix<AT2, R2, C2> mUpperTriangular;
 };
-
-template<typename M1, typename M2>
-QRType(M1, M2) -> QRType<typename M1::type, M1::getRows(), M1::getCols(), typename M2::type, M2::getRows(), M2::getCols()>;
 
 template<Arithmetic ArithmeticType, std::size_t Rows, std::size_t Cols>
 constexpr auto Matrix<ArithmeticType, Rows, Cols>::QRDecomposition() const {
@@ -417,6 +386,72 @@ constexpr auto Matrix<ArithmeticType, Rows, Cols>::QRDecomposition() const {
     }
     Matrix<double, Rows, Cols> R = Q.transpose() * (*this);
     return QRType(Q, R);
+}
+
+template<std::size_t Dim>
+constexpr auto reductionBareissAlgorithmMapping() {
+    constexpr std::size_t size = (Dim - 1) * Dim * (2 * Dim - 1) / 6;
+    std::size_t v_index = 0;
+    std::array<std::tuple<int, int, int, int>, size> values;
+    int v1, v2, v3, v4, t1, t2 = Dim + 1;
+    for (int dim = Dim - 1; dim >= 1; dim--) {
+        t1 = Dim - 1 - dim;
+        for (int index = 0; index < dim * dim; index++) {
+            v1 = t1 * t2;
+            v2 = index % dim + 1 + v1;
+            v3 = (index / dim + 1) * Dim + v1;
+            v4 = v2 + v3 - v1;
+            values[v_index++] = std::tuple{ v1, v2, v3, v4 };
+        }
+    }
+    return values;
+}
+
+template<Arithmetic ArithmeticType, std::size_t Dim>
+constexpr auto matrixPolynomialComposition(cte::mat::Matrix<ArithmeticType, Dim, Dim> mat) {
+
+    std::array<cte::poly::Polynomial<ArithmeticType, 2 * (Dim - 1)>, Dim * Dim> polynomials{};
+
+    for (std::size_t row = 0; row < Dim; row++) {
+        for (std::size_t col = 0; col < Dim; col++) {
+            polynomials[row * Dim + col] = cte::poly::Polynomial<ArithmeticType, 2 * (Dim - 1)>{};
+            polynomials[row * Dim + col][2 * (Dim - 1)] = mat[row][col];
+            polynomials[row * Dim + col][2 * (Dim - 1) - 1] = (row * Dim + col) % (Dim + 1) == 0 ? ArithmeticType{-1} : ArithmeticType{0};
+        }
+    }
+
+    return polynomials;
+
+}
+
+template<auto matrix>
+constexpr auto reductionBareissAlgorithm() {
+    constexpr std::size_t Dim = matrix.getRows();
+    constexpr auto mapping = reductionBareissAlgorithmMapping<Dim>();
+    auto polynomials = matrixPolynomialComposition(matrix);
+    auto pivot = cte::poly::Polynomial<typename decltype(matrix)::type, 2 * (Dim - 1)>{};
+    pivot[2 * (Dim - 1)] = 1.0l;
+    std::size_t index = 0;
+    for (int power = Dim - 1; power >= 1; power--) {
+        for (std::size_t i = 0; i < power * power; i++) {
+            polynomials[std::get<3>(mapping[index])] = cte::poly::div_preserve_dim(cte::poly::sub_preserve_dim(cte::poly::mult_preserve_dim(polynomials[std::get<0>(mapping[index])], polynomials[std::get<3>(mapping[index])]), cte::poly::mult_preserve_dim(polynomials[std::get<1>(mapping[index])], polynomials[std::get<2>(mapping[index])])), pivot).getQuotient();
+            index++;
+        }
+        pivot = polynomials[(Dim - 1 - power) * (Dim + 1)];
+    }
+    return polynomials[Dim * Dim - 1];
+}
+
+template<auto matrix>
+constexpr auto getCharacteristicPolynomial() {
+    return cte::poly::reduceDegree<reductionBareissAlgorithm<matrix>()>();
+}
+
+template<auto matrix>
+constexpr auto calculateEigenvalues() {
+    constexpr auto characteristic = getCharacteristicPolynomial<matrix>();
+    constexpr auto eigenvalues = characteristic.roots();
+    return eigenvalues;
 }
 
 }
