@@ -12,10 +12,10 @@ constexpr Type abs(const Type value) noexcept {
 }
 
 template<typename Type, Integer IntegerType>
-constexpr double pow(const Type base, const IntegerType exponent) noexcept {
+constexpr long double pow(const Type base, const IntegerType exponent) noexcept {
     if (base == Type{0}) return base;
-    double result = 1.0;
-    double cbase = exponent < 0 ? 1 / static_cast<double>(base) : static_cast<double>(base);
+    long double result = 1.0;
+    long double cbase = exponent < 0 ? 1 / static_cast<long double>(base) : static_cast<long double>(base);
     for (IntegerType index = 0; index < abs(exponent); index++) {
         result *= cbase;
     }
