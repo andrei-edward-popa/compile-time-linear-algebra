@@ -25,8 +25,10 @@ template<Arithmetic, std::size_t> constexpr auto matrixPolynomialComposition(aut
 template<auto> constexpr auto reductionBareissAlgorithm();
 template<auto> constexpr auto getCharacteristicPolynomial();
 template<auto> constexpr auto calculateEigenvalues();
-
+template<auto> constexpr auto calculateEigenvectors();
 template<Arithmetic, std::size_t, std::size_t, Arithmetic, std::size_t, std::size_t> struct QRType;
+template<std::size_t N> Matrix<uint16_t, N, N - 1> linearEquationMapping();
+template<Arithmetic ArithmeticType, std::size_t Size> constexpr std::array<long double, Size> solveDeterminateSystem(const Matrix<ArithmeticType, Size, Size>& coeffs, const std::array<ArithmeticType, Size> freeTerms);
 
 template<typename M1, typename M2>
 QRType(M1, M2) -> QRType<typename M1::type, M1::getRows(), M1::getCols(), typename M2::type, M2::getRows(), M2::getCols()>;
@@ -40,17 +42,20 @@ template<Arithmetic, std::size_t> struct Polynomial;
 template<typename... Types>
 Polynomial(Types...) -> Polynomial<std::common_type_t<Types...>, sizeof...(Types) - 1>;
 
-constexpr auto add_preserve_dim(auto, auto);
-constexpr auto sub_preserve_dim(auto, auto);
-constexpr auto mult_preserve_dim(auto, auto);
-constexpr auto div_preserve_dim(auto, auto);
+constexpr std::size_t countLeadingZeros(const auto&);
+constexpr auto reduceDegree(const auto&);
 
+template<auto, auto> constexpr auto add();
+template<auto, auto> constexpr auto sub();
+template<auto, auto> constexpr auto mult();
+template<auto, auto> constexpr auto div();
+template<auto> constexpr std::size_t countLeadingZeros();
 template<auto> constexpr auto reduceDegree();
 
-template<Arithmetic, Arithmetic, std::size_t, std::size_t> struct DivType;
+template<Arithmetic, std::size_t, Arithmetic, std::size_t> struct DivType;
 
 template<typename P1, typename P2>
-DivType(P1, P2) -> DivType<typename P1::type, typename P2::type, P1::getDegree(), P2::getDegree()>;
+DivType(P1, P2) -> DivType<typename P1::type, P1::getDegree(), typename P2::type, P2::getDegree()>;
 
 }
 
