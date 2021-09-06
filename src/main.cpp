@@ -5,15 +5,15 @@
 
 int main() {
 
-    constexpr cte::mat::Matrix non_singular{ { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
-    constexpr cte::mat::Matrix singular{ { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 8 } };
+    constexpr cte::mat::Matrix singular{ { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
+    constexpr cte::mat::Matrix non_singular{ { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 8 } };
 
-    constexpr cte::mat::Matrix copy = non_singular;
-    constexpr cte::mat::Matrix add = non_singular + copy;
-    constexpr cte::mat::Matrix hadamard = non_singular ^ copy;
-    constexpr cte::mat::Matrix product = non_singular * copy;
-    constexpr cte::mat::Matrix concat = product.concatenateCols(non_singular);
-    constexpr cte::mat::Matrix inverse = singular.inverse();
+    constexpr cte::mat::Matrix copy = singular;
+    constexpr cte::mat::Matrix add = singular + copy;
+    constexpr cte::mat::Matrix hadamard = singular ^ copy;
+    constexpr cte::mat::Matrix product = singular * copy;
+    constexpr cte::mat::Matrix concat = product.concatenateCols(singular);
+    constexpr cte::mat::Matrix inverse = non_singular.inverse();
 
     constexpr cte::mat::Matrix QR_test_matrix = { { 12, -51, 4 }, {6, 167, -68 }, {-4, 24, -41} };
     constexpr auto QR = QR_test_matrix.QRDecomposition();
@@ -33,15 +33,16 @@ int main() {
     constexpr cte::poly::Polynomial p6 = cte::poly::div<p11, p22>().getQuotient();
     constexpr cte::poly::Polynomial p7 = cte::poly::div<p11, p22>().getRemainder();
 
-    constexpr cte::mat::Matrix eigenvalues_test{ { 1.0l, 2.0l, 3.0l, 4.0l }, { 4.0l, 5.0l, 6.0l, 7.0l }, { 7.0l, 8.0l, 8.0l, 9.0l }, {10.0l, 11.0l, 12.0l, 16.0l } };
-    constexpr auto eigenvalues = cte::mat::calculateEigenvalues<eigenvalues_test>();
+    constexpr cte::mat::Matrix eigen_test{ { 1.0l, 2.0l, 3.0l, 4.0l }, { 4.0l, 5.0l, 6.0l, 7.0l }, { 7.0l, 8.0l, 8.0l, 9.0l }, {10.0l, 11.0l, 12.0l, 16.0l } };
+    constexpr auto eigenvalues = cte::mat::calculateEigenvalues<eigen_test>();
+    constexpr auto eigenvectors = cte::mat::calculateEigenvectors<eigen_test>();
 
     ignore(add, hadamard, product, concat);
 
-    fmt::print("The inverse matrix of\n{}\n", singular);
+    fmt::print("The inverse matrix of\n{}\n", non_singular);
     fmt::print("is the following matrix:\n{}\n", inverse);
     fmt::print("and the value of the determinant is: \n");
-    fmt::print("{}\n\n", singular.determinant());
+    fmt::print("{}\n\n", non_singular.determinant());
 
     fmt::print("QR decomposition of the matrix:\n");
     fmt::print("{}\n", QR_test_matrix);
@@ -60,8 +61,10 @@ int main() {
     fmt::print("Division: Q: {}\n", p6);
     fmt::print("          R: {}\n\n", p7);
 
-    fmt::print("Eigenvalues of matrix:\n{}\nare:\n", eigenvalues_test);
+    fmt::print("Eigenvalues of matrix:\n{}\nare:\n", eigen_test);
     fmt::print("{}\n", eigenvalues);
+    fmt::print("and eigenvectors are:\n");
+    fmt::print("{}\n", eigenvectors);
 
     return 0;
 }

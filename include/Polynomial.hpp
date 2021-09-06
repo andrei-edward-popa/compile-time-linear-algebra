@@ -5,6 +5,7 @@
 #include <cassert>
 
 #include "Math.hpp"
+#include "Exception.hpp"
 #include "Definition.hpp"
 #include "CustomFormatter.hpp"
 
@@ -19,11 +20,8 @@ struct Polynomial {
         mCoeffs.fill(ArithmeticType{0});
     }
 
-    constexpr Polynomial(const auto& rhs) {
-        assert(Degree == rhs.getDegree());
-        for (std::size_t index = 0; index <= Degree; index++) {
-            mCoeffs[index] = static_cast<ArithmeticType>(rhs[index]);
-        }
+    constexpr Polynomial(std::initializer_list<ArithmeticType>&& param) {
+        std::copy(param.begin(), param.end(), mCoeffs.begin());
     }
 
     constexpr Polynomial(const Polynomial& rhs) {
@@ -34,95 +32,13 @@ struct Polynomial {
         mCoeffs = std::move(rhs.mCoeffs);
     }
 
-    constexpr Polynomial(std::initializer_list<ArithmeticType>&& param) {
-        assert(param.size() == Degree + 1);
-        std::copy(param.begin(), param.end(), mCoeffs.begin());
-    }
-
-    constexpr auto derivate() const {
-        constexpr std::size_t degree = static_cast<int16_t>(Degree) - 1 < 0 ? 0 : Degree - 1;
-        Polynomial<ArithmeticType, degree> result;
-        for (std::size_t index = 0; index < Degree; index++) {
-            result[index] = mCoeffs[index] * (Degree - index); 
-        }
-        return result;
-    }
-
-    template<typename ArgType>
-    constexpr ArgType calculate(const ArgType& value) const {
-        ArgType result{}, temp{1};
-        for (std::size_t index = 0; index < Degree + 1; index++) {
-            result += static_cast<ArgType>(mCoeffs[Degree - index]) * temp;
-            temp *= value;
-        }
-        return result;
-    }
-
-    template<typename ArgType>
-    constexpr std::complex<ArgType> calculate(const std::complex<ArgType>& value) const {
-        std::complex<ArgType> result{}, temp{1, 0};
-        for (std::size_t index = 0; index < Degree + 1; index++) {
-            result += static_cast<ArgType>(mCoeffs[Degree - index]) * temp;
-            temp *= value;
-            if (cte::math::abs(temp.imag()) < 1e-20) {
-                temp = std::complex<ArgType>(temp.real(), ArgType{});
-            }
-        }
-        return result;
-    }
-
-    constexpr std::array<std::complex<double>, Degree> roots() const {
-        std::array<std::complex<double>, Degree> z, w;
-        auto derivative = derivate();
-        for (std::size_t index = 0; index < Degree; index++) {
-            z[index] = std::complex<double>(0.5 * index + 0.1, 0.5 * index + 0.1);
-        }
-        std::complex<double> ratio, inverse_sum;
-        double error = cte::math::pow(10, -sPrecision);
-        bool check;
-        while (true) {
-            check = false;
-            for (std::size_t index = 0; index < Degree; index++) {
-                inverse_sum = std::complex<double>(0, 0);
-                for (std::size_t sum_index = 0; sum_index < Degree; sum_index++) {
-                    if (index != sum_index) {
-                        inverse_sum += 1.0 / (z[index] - z[sum_index]);
-                    }
-                }
-                ratio = calculate(z[index]) / derivative.calculate(z[index]);
-                w[index] = ratio / (1.0 - ratio * inverse_sum);
-            }
-            for (std::size_t index = 0; index < Degree; index++) {
-                z[index] = z[index] - w[index];
-                if (cte::math::abs(w[index].real()) > error || cte::math::abs(w[index].imag()) > error) {
-                    check = true;
-                }
-                if (cte::math::abs(z[index].imag()) < 1e-20) {
-                    z[index] = std::complex<double>(z[index].real(), 0.0);
-                }
-            }
-            if (check == false) {
-                break;
-            }
-        }
-        return z;
-    }
-
-    constexpr bool isNull() const {
-        return Degree == 0 && mCoeffs[0] == 0;
-    }
-
-    static constexpr std::size_t getDegree() {
-        return Degree;
-    }
-
     constexpr ArithmeticType& operator[](const std::size_t index) {
-        assert(index < Degree + 1);
+        if (index >= Degree + 1) throw cte::OutOfRangeException(index);
         return mCoeffs[index];
     }
 
     constexpr const ArithmeticType& operator[](const std::size_t index) const {
-        assert(index < Degree + 1);
+        if (index >= Degree + 1) throw cte::OutOfRangeException(index);
         return mCoeffs[index];
     }
 
@@ -131,58 +47,54 @@ struct Polynomial {
         return *this;
     }
 
-    constexpr auto& operator=(const auto& rhs) {
-        assert(Degree == rhs.getDegree());
-        for (std::size_t index = 0; index <= Degree; index++) {
-            mCoeffs[index] = static_cast<ArithmeticType>(rhs[index]);
-        }
-        return *this;
-    }
-
     constexpr Polynomial& operator=(Polynomial&& rhs) {
         mCoeffs = std::move(rhs.mCoeffs);
         return *this;
     }
 
-
-    template<Arithmetic ArgArithmeticType>
-    constexpr Polynomial operator*(const ArgArithmeticType constant) const {
-        Polynomial<std::common_type_t<ArithmeticType, ArgArithmeticType>, Degree> result;
-        for (std::size_t index = 0; index <= Degree; index++) {
-            result[index] = mCoeffs[index] * constant;
+    template<Arithmetic OtherArithmeticType, std::size_t OtherDegree>
+    constexpr operator Polynomial<OtherArithmeticType, OtherDegree>() const & {
+        if (Degree != OtherDegree) throw cte::DimensionMismatchException("Invalid conversion, polynomials have different degrees", Degree, OtherDegree);
+        Polynomial<OtherArithmeticType, OtherDegree> result;
+        for (std::size_t i = 0; i <= Degree; i++) {
+            result[i] = static_cast<OtherArithmeticType>(mCoeffs[i]);
         }
         return result;
     }
 
-    constexpr Polynomial& operator*=(const ArithmeticType constant) const {
-        for (std::size_t index = 0; index <= Degree; index++) {
-            mCoeffs[index] = mCoeffs[index] * constant;
-        }
-        return *this;
-    }
-
-    template<Arithmetic ArgArithmeticType>
-    constexpr Polynomial operator/(const ArithmeticType constant) const {
-        Polynomial<std::common_type_t<ArithmeticType, ArgArithmeticType>, Degree> result;
-        for (std::size_t index = 0; index <= Degree; index++) {
-            result[index] = mCoeffs[index] / constant;
+    template<Arithmetic OtherArithmeticType, std::size_t OtherDegree>
+    constexpr operator Polynomial<OtherArithmeticType, OtherDegree>() && {
+        if (Degree != OtherDegree) throw cte::DimensionMismatchException("Invalid conversion, polynomials have different degrees", Degree, OtherDegree);
+        Polynomial<OtherArithmeticType, OtherDegree> result;
+        for (std::size_t i = 0; i <= Degree; i++) {
+            result[i] = static_cast<OtherArithmeticType>(std::move(mCoeffs[i]));
         }
         return result;
     }
 
-    constexpr Polynomial& operator/=(const ArithmeticType constant) const {
-        for (std::size_t index = 0; index <= Degree; index++) {
-            mCoeffs[index] = mCoeffs[index] / constant;
-        }
-        return *this;
+    static constexpr std::size_t getDegree() {
+        return Degree;
     }
+
+    constexpr auto operator+(const auto& rhs) const noexcept -> Polynomial<ArithmeticType, Degree>;
+    constexpr auto operator-(const auto& rhs) const noexcept -> Polynomial<ArithmeticType, Degree>;
+    constexpr auto operator*(const auto& rhs) const noexcept -> Polynomial<ArithmeticType, Degree>;
+    constexpr auto operator/(const auto& rhs) const noexcept -> DivType<ArithmeticType, Degree, ArithmeticType, Degree>;
+    constexpr auto operator*(const ArithmeticType& constant) const noexcept -> Polynomial<ArithmeticType, Degree>;
+    constexpr auto operator/(const ArithmeticType& constant) const noexcept -> Polynomial<ArithmeticType, Degree>;
+    constexpr Polynomial& operator*=(const ArithmeticType constant) const noexcept;
+    constexpr Polynomial& operator/=(const ArithmeticType constant) const noexcept;
+
+    constexpr auto derivate() const noexcept -> Polynomial<ArithmeticType, static_cast<int16_t>(Degree) - 1 < 0 ? 0 : Degree - 1>;
+    constexpr std::array<std::complex<long double>, Degree> roots() const noexcept;
+    constexpr auto calculate(const auto& value) const noexcept -> std::common_type_t<ArithmeticType, decltype(value)>;
 
 public:
     std::array<ArithmeticType, Degree + 1> mCoeffs;
     constexpr static int8_t sPrecision = 4;
 };
 
-template<Arithmetic AT1, Arithmetic AT2, std::size_t D1, std::size_t D2>
+template<Arithmetic AT1, std::size_t D1, Arithmetic AT2, std::size_t D2>
 struct DivType {
 
     constexpr DivType(const auto& q, const auto& r) : mQuotient(q), mRemainder(r) {
@@ -210,6 +122,178 @@ private:
     Polynomial<AT2, D2> mRemainder;
 };
 
+template<Arithmetic ArithmeticType, std::size_t Degree>
+constexpr auto Polynomial<ArithmeticType, Degree>::operator+(const auto& rhs) const noexcept -> Polynomial<ArithmeticType, Degree> {
+    using removed_cvref_rhs = typename std::remove_cvref_t<decltype(rhs)>::type;
+    static_assert(Degree == rhs.getDegree());
+    static_assert(std::is_same_v<ArithmeticType, removed_cvref_rhs>);
+    Polynomial<ArithmeticType, Degree> result;
+    for (std::size_t index = 0; index <= Degree; index++) {
+        result[index] = mCoeffs[index] + rhs[index];
+    }
+    return result;
+}
+
+template<Arithmetic ArithmeticType, std::size_t Degree>
+constexpr auto Polynomial<ArithmeticType, Degree>::operator-(const auto& rhs) const noexcept -> Polynomial<ArithmeticType, Degree> {
+    using removed_cvref_rhs = typename std::remove_cvref_t<decltype(rhs)>::type;
+    static_assert(Degree == rhs.getDegree());
+    static_assert(std::is_same_v<ArithmeticType, removed_cvref_rhs>);
+    auto indirect_sub = [&]() {
+        Polynomial<ArithmeticType, Degree> result;
+        for (std::size_t index = 0; index <= Degree; index++) {
+            result[index] = mCoeffs[index] - rhs[index];
+        }
+        return result;
+    };
+    Polynomial<ArithmeticType, Degree> result = indirect_sub();
+    return result;
+}
+
+template<Arithmetic ArithmeticType, std::size_t Degree>
+constexpr auto Polynomial<ArithmeticType, Degree>::operator*(const auto& rhs) const noexcept -> Polynomial<ArithmeticType, Degree> {
+    using removed_cvref_rhs = typename std::remove_cvref_t<decltype(rhs)>::type;
+    static_assert(Degree == rhs.getDegree());
+    static_assert(std::is_same_v<ArithmeticType, removed_cvref_rhs>);
+    constexpr std::size_t degree = Degree + rhs.getDegree();
+    Polynomial<ArithmeticType, degree> result;
+    for (std::size_t index1 = 0; index1 <= Degree; index1++) {
+        for (std::size_t index2 = 0; index2 <= rhs.getDegree(); index2++) {
+            result[degree - index1 - index2] += mCoeffs[Degree - index1] * rhs[rhs.getDegree() - index2];
+        }
+    }
+    Polynomial<ArithmeticType, Degree> final_result;
+    for (std::size_t index = 0; index <= Degree; index++) {
+        final_result[Degree - index] = result[degree - index];
+    }
+    return final_result;
+}
+
+template<Arithmetic ArithmeticType, std::size_t Degree>
+constexpr auto Polynomial<ArithmeticType, Degree>::operator/(const auto& rhs) const noexcept -> DivType<ArithmeticType, Degree, ArithmeticType, Degree> {
+    using removed_cvref_rhs = typename std::remove_cvref_t<decltype(rhs)>::type;
+    static_assert(Degree == rhs.getDegree());
+    static_assert(std::is_same_v<ArithmeticType, removed_cvref_rhs>);
+    auto indirect_div = [&]() {
+        Polynomial<ArithmeticType, Degree> q;
+        Polynomial<ArithmeticType, Degree> r;
+        Polynomial<ArithmeticType, Degree> copy_poly1 = *this;
+
+        std::size_t nz1 = 0, nz2 = 0;
+        for (std::size_t index = 0; index <= Degree; index++) {
+            if (mCoeffs[index] != 0) {
+                nz1 = index;
+                break;
+            }
+        }
+        for (std::size_t index = 0; index <= rhs.getDegree(); index++) {
+            if (rhs[index] != 0) {
+                nz2 = index;
+                break;
+            }
+        }
+        std::size_t p1_degree = Degree - nz1;
+        std::size_t p2_degree = rhs.getDegree() - nz2;
+
+        std::size_t degree = p1_degree > p2_degree ? p1_degree - p2_degree : 0;
+
+        for (std::size_t q_index = nz1 + p2_degree; q_index <= degree + nz1 + p2_degree; q_index++) {
+            q[q_index] = copy_poly1[q_index - p2_degree] / static_cast<long double>(rhs[nz2]);
+            for (std::size_t p2_index = q_index; p2_index <= p2_degree + q_index; p2_index++) {
+                copy_poly1[p2_index - p2_degree] -= rhs[p2_index - q_index + nz2] * q[q_index];
+            }
+        }
+        return DivType(q, copy_poly1);
+    };
+    auto result = indirect_div();
+    return DivType(result.getQuotient(), result.getRemainder());
+}
+
+template<Arithmetic ArithmeticType, std::size_t Degree>
+constexpr auto Polynomial<ArithmeticType, Degree>::operator*(const ArithmeticType& constant) const noexcept -> Polynomial<ArithmeticType, Degree> {
+    Polynomial<ArithmeticType, Degree> result;
+    for (std::size_t index = 0; index <= Degree; index++) {
+        result[index] = mCoeffs[index] * constant;
+    }
+    return result;
+}
+
+template<Arithmetic ArithmeticType, std::size_t Degree>
+constexpr auto Polynomial<ArithmeticType, Degree>::operator/(const ArithmeticType& constant) const noexcept -> Polynomial<ArithmeticType, Degree> {
+    Polynomial<ArithmeticType, Degree> result;
+    for (std::size_t index = 0; index <= Degree; index++) {
+        result[index] = mCoeffs[index] / constant;
+    }
+    return result;
+}
+
+template<Arithmetic ArithmeticType, std::size_t Degree>
+constexpr Polynomial<ArithmeticType, Degree>& Polynomial<ArithmeticType, Degree>::operator*=(const ArithmeticType constant) const noexcept {
+    for (std::size_t index = 0; index <= Degree; index++) {
+        mCoeffs[index] = mCoeffs[index] * constant;
+    }
+    return *this;
+}
+
+template<Arithmetic ArithmeticType, std::size_t Degree>
+constexpr Polynomial<ArithmeticType, Degree>& Polynomial<ArithmeticType, Degree>::operator/=(const ArithmeticType constant) const noexcept {
+    for (std::size_t index = 0; index <= Degree; index++) {
+        mCoeffs[index] = mCoeffs[index] / constant;
+    }
+    return *this;
+}
+
+template<Arithmetic ArithmeticType, std::size_t Degree>
+constexpr auto Polynomial<ArithmeticType, Degree>::derivate() const noexcept -> Polynomial<ArithmeticType, static_cast<int16_t>(Degree) - 1 < 0 ? 0 : Degree - 1> {
+    constexpr std::size_t degree = static_cast<int16_t>(Degree) - 1 < 0 ? 0 : Degree - 1;
+    Polynomial<ArithmeticType, degree> result;
+    for (std::size_t index = 0; index < Degree; index++) {
+        result[index] = mCoeffs[index] * (Degree - index); 
+    }
+    return result;
+}
+
+template<Arithmetic ArithmeticType, std::size_t Degree>
+constexpr std::array<std::complex<long double>, Degree> Polynomial<ArithmeticType, Degree>::roots() const noexcept {
+    std::array<std::complex<long double>, Degree> z, w;
+    std::complex<long double> ratio, inverse_sum;
+    long double error = cte::math::pow(10, -sPrecision);
+    auto derivative = derivate();
+    bool check = true;   
+
+    for (std::size_t index = 0; index < Degree; index++) {
+        z[index] = std::complex<long double>(0.5L * index + 0.1L, 0.5L * index + 0.1L);
+    }
+    
+    while (check == true) {
+        check = false;
+        for (std::size_t index = 0; index < Degree; index++) {
+            inverse_sum = std::complex<long double>(0.0L, 0.0L);
+            for (std::size_t sum_index = 0; sum_index < Degree; sum_index++) {
+                inverse_sum += index != sum_index ? 1.0L / (z[index] - z[sum_index]) : 0.0L;
+            }
+            ratio = calculate(z[index]) / derivative.calculate(z[index]);
+            w[index] = ratio / (1.0L - ratio * inverse_sum);
+        }
+        for (std::size_t index = 0; index < Degree; index++) {
+            z[index] = z[index] - w[index];
+            z[index] = cte::math::abs(z[index].imag()) < 1e-20 ? std::complex<long double>(z[index].real(), 0.0) : z[index];
+            check = cte::math::abs(w[index].real()) > error || cte::math::abs(w[index].imag()) > error;
+        }
+    }
+    return z;
+}
+
+template<Arithmetic ArithmeticType, std::size_t Degree>
+constexpr auto Polynomial<ArithmeticType, Degree>::calculate(const auto& value) const noexcept -> std::common_type_t<ArithmeticType, decltype(value)> {
+    std::common_type_t<ArithmeticType, decltype(value)> result{}, temp{1};
+    for (std::size_t index = 0; index < Degree + 1; index++) {
+        result += static_cast<decltype(value)>(mCoeffs[Degree - index]) * temp;
+        temp *= value;
+    }
+    return result;
+}
+
 template<auto polynomial>
 constexpr std::size_t countLeadingZeros() {
     std::size_t count = 0;
@@ -219,11 +303,31 @@ constexpr std::size_t countLeadingZeros() {
     return count;
 }
 
+constexpr std::size_t countLeadingZeros(const auto& polynomial) {
+    std::size_t count = 0;
+    for (std::size_t i = 0; i < polynomial.getDegree(); i++) {
+        if (polynomial[i] == 0) { count++; }
+    }
+    return count;
+}
+
 template<auto polynomial>
 constexpr auto reduceDegree() {
+    using removed_cvref_type = typename std::remove_cvref_t<decltype(polynomial)>::type;
     constexpr std::size_t zeros = countLeadingZeros<polynomial>();
     constexpr std::size_t degree = polynomial.getDegree() - zeros;
-    Polynomial<typename decltype(polynomial)::type, degree> result;
+    Polynomial<removed_cvref_type, degree> result;
+    for (std::size_t index = 0; index <= degree; index++) {
+        result[index] = polynomial[zeros + index];
+    }
+    return result;
+}
+
+constexpr auto reduceDegree(const auto& polynomial) {
+    using removed_cvref_type = typename std::remove_cvref_t<decltype(polynomial)>::type;
+    constexpr std::size_t zeros = countLeadingZeros(polynomial);
+    constexpr std::size_t degree = polynomial.getDegree() - zeros;
+    Polynomial<removed_cvref_type, degree> result;
     for (std::size_t index = 0; index <= degree; index++) {
         result[index] = polynomial[zeros + index];
     }
@@ -232,8 +336,10 @@ constexpr auto reduceDegree() {
 
 template<auto polynomial1, auto polynomial2>
 constexpr auto add() {
+    using removed_cvref_type1 = typename std::remove_cvref_t<decltype(polynomial1)>::type;
+    using removed_cvref_type2 = typename std::remove_cvref_t<decltype(polynomial2)>::type;
     constexpr std::size_t degree = polynomial1.getDegree() > polynomial2.getDegree() ? polynomial1.getDegree() : polynomial2.getDegree();
-    Polynomial<std::common_type_t<typename decltype(polynomial1)::type, typename decltype(polynomial2)::type>, degree> result;
+    Polynomial<std::common_type_t<removed_cvref_type1, removed_cvref_type2>, degree> result;
     for (std::size_t index = 0; index <= degree; index++) {
         result[index] = (static_cast<int>(polynomial1.getDegree() - degree + index) >= 0 ? polynomial1[polynomial1.getDegree() - degree + index] : 0) + (static_cast<int>(polynomial2.getDegree() - degree + index) >= 0 ? polynomial2[polynomial2.getDegree() - degree + index] : 0);
     }
@@ -242,18 +348,19 @@ constexpr auto add() {
 
 template<auto polynomial1, auto polynomial2>
 constexpr auto sub() {
+    using removed_cvref_type1 = typename std::remove_cvref_t<decltype(polynomial1)>::type;
+    using removed_cvref_type2 = typename std::remove_cvref_t<decltype(polynomial2)>::type;
+    constexpr std::size_t degree = polynomial1.getDegree() > polynomial2.getDegree() ? polynomial1.getDegree() : polynomial2.getDegree();
     constexpr auto indirect_sub = []() {
-        constexpr std::size_t degree = polynomial1.getDegree() > polynomial2.getDegree() ? polynomial1.getDegree() : polynomial2.getDegree();
-        Polynomial<std::common_type_t<typename decltype(polynomial1)::type, typename decltype(polynomial2)::type>, degree> result;
+        Polynomial<std::common_type_t<removed_cvref_type1, removed_cvref_type2>, degree> result;
         for (std::size_t index = 0; index <= degree; index++) {
             result[index] = (static_cast<int>(polynomial1.getDegree() - degree + index) >= 0 ? polynomial1[polynomial1.getDegree() - degree + index] : 0) - (static_cast<int>(polynomial2.getDegree() - degree + index) >= 0 ? polynomial2[polynomial2.getDegree() - degree + index] : 0);
         }
         return result;
     };
-    constexpr std::size_t degree = polynomial1.getDegree() > polynomial2.getDegree() ? polynomial1.getDegree() : polynomial2.getDegree();
-    constexpr Polynomial<std::common_type_t<typename decltype(polynomial1)::type, typename decltype(polynomial2)::type>, degree> result = indirect_sub();
+    constexpr Polynomial<std::common_type_t<removed_cvref_type1, removed_cvref_type2>, degree> result = indirect_sub();
     constexpr std::size_t zeros = countLeadingZeros<result>();
-    Polynomial<std::common_type_t<typename decltype(polynomial1)::type, typename decltype(polynomial2)::type>, degree - zeros> final_result;
+    Polynomial<std::common_type_t<removed_cvref_type1, removed_cvref_type2>, degree - zeros> final_result;
     for (std::size_t index = 0; index <= degree - zeros; index++) {
         final_result[index] = result[index + zeros];
     }
@@ -262,8 +369,10 @@ constexpr auto sub() {
 
 template<auto polynomial1, auto polynomial2>
 constexpr auto mult() {
+    using removed_cvref_type1 = typename std::remove_cvref_t<decltype(polynomial1)>::type;
+    using removed_cvref_type2 = typename std::remove_cvref_t<decltype(polynomial2)>::type;
     constexpr std::size_t degree = polynomial1.getDegree() + polynomial2.getDegree();
-    Polynomial<std::common_type_t<typename decltype(polynomial1)::type, typename decltype(polynomial2)::type>, degree> result;
+    Polynomial<std::common_type_t<removed_cvref_type1, removed_cvref_type2>, degree> result;
     for (std::size_t index1 = 0; index1 <= polynomial1.getDegree(); index1++) {
         for (std::size_t index2 = 0; index2 <= polynomial2.getDegree(); index2++) {
             result[degree - index1 - index2] += polynomial1[polynomial1.getDegree() - index1] * polynomial2[polynomial2.getDegree() - index2];
@@ -276,11 +385,11 @@ template<auto polynomial1, auto polynomial2>
 constexpr auto div() {
     constexpr auto indirect_div = []() {
         constexpr std::size_t degree = polynomial1.getDegree() > polynomial2.getDegree() ? polynomial1.getDegree() - polynomial2.getDegree() : 0;
-        Polynomial<double, degree> q;
-        Polynomial<double, polynomial2.getDegree()> r;
-        Polynomial<double, polynomial1.getDegree()> copy_poly1 = polynomial1;
+        Polynomial<long double, degree> q;
+        Polynomial<long double, polynomial2.getDegree()> r;
+        Polynomial<long double, polynomial1.getDegree()> copy_poly1 = polynomial1;
         for (std::size_t q_index = 0; q_index <= degree; q_index++) {
-            q[q_index] = copy_poly1[q_index] / static_cast<double>(polynomial2[0]);
+            q[q_index] = copy_poly1[q_index] / static_cast<long double>(polynomial2[0]);
             for (std::size_t p2_index = q_index; p2_index <= polynomial2.getDegree() + q_index; p2_index++) {
                 copy_poly1[p2_index] -= polynomial2[p2_index - q_index] * q[q_index];
             }
@@ -289,87 +398,6 @@ constexpr auto div() {
     };
     constexpr auto result = indirect_div();
     return DivType(result.getQuotient(), reduceDegree<result.getRemainder()>());
-}
-
-constexpr auto add_preserve_dim(auto polynomial1, auto polynomial2) {
-    static_assert(polynomial1.getDegree() == polynomial2.getDegree());
-    static_assert(std::is_same_v<typename decltype(polynomial1)::type, typename decltype(polynomial2)::type>);
-    constexpr std::size_t degree = polynomial1.getDegree();
-    Polynomial<typename decltype(polynomial1)::type, degree> result;
-    for (std::size_t index = 0; index <= degree; index++) {
-        result[index] = (static_cast<int>(polynomial1.getDegree() - degree + index) >= 0 ? polynomial1[polynomial1.getDegree() - degree + index] : 0) + (static_cast<int>(polynomial2.getDegree() - degree + index) >= 0 ? polynomial2[polynomial2.getDegree() - degree + index] : 0);
-    }
-    return result;
-}
-
-constexpr auto sub_preserve_dim(auto polynomial1, auto polynomial2) {
-    static_assert(polynomial1.getDegree() == polynomial2.getDegree());
-    static_assert(std::is_same_v<typename decltype(polynomial1)::type, typename decltype(polynomial2)::type>);
-    constexpr std::size_t degree = polynomial1.getDegree();
-    auto indirect_sub = [polynomial1, polynomial2]() {
-        Polynomial<typename decltype(polynomial1)::type, degree> result;
-        for (std::size_t index = 0; index <= degree; index++) {
-            result[index] = (static_cast<int>(polynomial1.getDegree() - degree + index) >= 0 ? polynomial1[polynomial1.getDegree() - degree + index] : 0) - (static_cast<int>(polynomial2.getDegree() - degree + index) >= 0 ? polynomial2[polynomial2.getDegree() - degree + index] : 0);
-        }
-        return result;
-    };
-    Polynomial<typename decltype(polynomial1)::type, degree> result = indirect_sub();
-    return result;
-}
-
-constexpr auto mult_preserve_dim(auto polynomial1, auto polynomial2) {
-    static_assert(polynomial1.getDegree() == polynomial2.getDegree());
-    static_assert(std::is_same_v<typename decltype(polynomial1)::type, typename decltype(polynomial2)::type>);
-    constexpr std::size_t degree = polynomial1.getDegree() + polynomial2.getDegree();
-    Polynomial<typename decltype(polynomial1)::type, degree> result;
-    for (std::size_t index1 = 0; index1 <= polynomial1.getDegree(); index1++) {
-        for (std::size_t index2 = 0; index2 <= polynomial2.getDegree(); index2++) {
-            result[degree - index1 - index2] += polynomial1[polynomial1.getDegree() - index1] * polynomial2[polynomial2.getDegree() - index2];
-        }
-    }
-    Polynomial<typename decltype(polynomial1)::type, polynomial1.getDegree()> final_result;
-    for (std::size_t index = 0; index <= polynomial1.getDegree(); index++) {
-        final_result[polynomial1.getDegree() - index] = result[degree - index];
-    }
-    return final_result;
-}
-
-constexpr auto div_preserve_dim(auto polynomial1, auto polynomial2) {
-    static_assert(polynomial1.getDegree() == polynomial2.getDegree());
-    static_assert(std::is_same_v<typename decltype(polynomial1)::type, typename decltype(polynomial2)::type>);
-    auto indirect_div = [&]() {
-        Polynomial<typename decltype(polynomial1)::type, polynomial1.getDegree()> q;
-        Polynomial<typename decltype(polynomial1)::type, polynomial2.getDegree()> r;
-        Polynomial<typename decltype(polynomial1)::type, polynomial1.getDegree()> copy_poly1 = polynomial1;
-
-        std::size_t nz1 = 0, nz2 = 0;
-        for (std::size_t index = 0; index <= polynomial1.getDegree(); index++) {
-            if (polynomial1[index] != 0) {
-                nz1 = index;
-                break;
-            }
-        }
-        for (std::size_t index = 0; index <= polynomial2.getDegree(); index++) {
-            if (polynomial2[index] != 0) {
-                nz2 = index;
-                break;
-            }
-        }
-        std::size_t p1_degree = polynomial1.getDegree() - nz1;
-        std::size_t p2_degree = polynomial2.getDegree() - nz2;
-
-        std::size_t degree = p1_degree > p2_degree ? p1_degree - p2_degree : 0;
-
-        for (std::size_t q_index = nz1 + p2_degree; q_index <= degree + nz1 + p2_degree; q_index++) {
-            q[q_index] = copy_poly1[q_index - p2_degree] / static_cast<double>(polynomial2[nz2]);
-            for (std::size_t p2_index = q_index; p2_index <= p2_degree + q_index; p2_index++) {
-                copy_poly1[p2_index - p2_degree] -= polynomial2[p2_index - q_index + nz2] * q[q_index];
-            }
-        }
-        return DivType(q, copy_poly1);
-    };
-    auto result = indirect_div();
-    return DivType(result.getQuotient(), result.getRemainder());
 }
 
 }
