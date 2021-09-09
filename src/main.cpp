@@ -5,8 +5,8 @@
 
 int main() {
 
-    constexpr cte::mat::Matrix singular{ { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
-    constexpr cte::mat::Matrix non_singular{ { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 8 } };
+    constexpr cte::mat::Matrix singular{ { 1.0l, 2.0l, 3.0l }, { 4.0l, 5.0l, 6.0l }, { 7.0l, 8.0l, 9.0l } };
+    constexpr cte::mat::Matrix non_singular{ { 1.0l, 2.0l, 3.0l }, { 4.0l, 5.0l, 6.0l }, { 7.0l, 8.0l, 8.0l } };
 
     constexpr cte::mat::Matrix copy = singular;
     constexpr cte::mat::Matrix add = singular + copy;
@@ -15,18 +15,18 @@ int main() {
     constexpr cte::mat::Matrix concat = product.concatenateCols(singular);
     constexpr cte::mat::Matrix inverse = non_singular.inverse();
 
-    constexpr cte::mat::Matrix QR_test_matrix = { { 12, -51, 4 }, {6, 167, -68 }, {-4, 24, -41} };
+    constexpr cte::mat::Matrix QR_test_matrix = { { 12.0l, -51.0l, 4.0l }, { 6.0l, 167.0l, -68.0l }, { -4.0l, 24.0l, -41.0l } };
     constexpr auto QR = QR_test_matrix.QRDecomposition();
     constexpr auto Q = QR.getOrthogonal();
     constexpr auto R = QR.getUpperTriangular();
 
-    constexpr cte::poly::Polynomial fifth{ 2, 0, 3, -7, 1, -10 };
+    constexpr cte::poly::Polynomial fifth{ 2.0l, 0.0l, 3.0l, -7.0l, 1.0l, -10.0l };
     constexpr auto roots = fifth.roots();
 
-    constexpr cte::poly::Polynomial p1{1,2,3,4};
-    constexpr cte::poly::Polynomial p2{2,3,4,1,10,7};
-    constexpr cte::poly::Polynomial p11{1,1,2,1,6};
-    constexpr cte::poly::Polynomial p22{4,1,2,2};
+    constexpr cte::poly::Polynomial p1{ 1.0l, 2.0l, 3.0l, 4.0l };
+    constexpr cte::poly::Polynomial p2{ 2.0l, 3.0, 4.0l, 1.0l, 10.0l, 7.0l };
+    constexpr cte::poly::Polynomial p11{ 1.0l, 1.0l, 2.0l, 1.0l, 6.0l };
+    constexpr cte::poly::Polynomial p22{ 4.0l, 1.0l, 2.0l, 2.0l };
     constexpr cte::poly::Polynomial p3 = cte::poly::add<p1, p2>();
     constexpr cte::poly::Polynomial p4 = cte::poly::sub<p1, p2>();
     constexpr cte::poly::Polynomial p5 = cte::poly::mult<p1, p2>();
@@ -42,7 +42,7 @@ int main() {
     fmt::print("The inverse matrix of\n{}\n", non_singular);
     fmt::print("is the following matrix:\n{}\n", inverse);
     fmt::print("and the value of the determinant is: \n");
-    fmt::print("{}\n\n", non_singular.determinant());
+    fmt::print("{:.4f}\n\n", non_singular.determinant());
 
     fmt::print("QR decomposition of the matrix:\n");
     fmt::print("{}\n", QR_test_matrix);
