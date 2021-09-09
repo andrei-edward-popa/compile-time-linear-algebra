@@ -6,7 +6,7 @@
 
 #include "Definition.hpp"
 
-template <Arithmetic T>
+template <FloatingPoint T>
 struct fmt::formatter<std::complex<T>> {
 
     template <typename ParseContext>
@@ -56,7 +56,7 @@ struct fmt::formatter<std::array<T, N>> {
     }
 };
 
-template <Arithmetic T, std::size_t R, std::size_t C>
+template <FloatingPoint T, std::size_t R, std::size_t C>
 struct fmt::formatter<cte::mat::Matrix<T, R, C>> {
 
     static constexpr const char* sExtension = ",\n {}";
@@ -88,7 +88,7 @@ struct fmt::formatter<cte::mat::Matrix<T, R, C>> {
     }
 };
 
-template <Arithmetic T, std::size_t N>
+template <FloatingPoint T, std::size_t N>
 struct fmt::formatter<cte::poly::Polynomial<T, N>> {
 
     static constexpr const char* sExtension = std::is_floating_point_v<T> ? "{:+.4f}" : "{:+}";
