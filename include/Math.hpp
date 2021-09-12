@@ -40,12 +40,12 @@ constexpr FloatingPointType sqrt(FloatingPointType value) noexcept {
 
 template<Integer IntegerType>
 constexpr IntegerType abs(const IntegerType value) noexcept {
-    return value == IntegerType{} ? IntegerType{} : value < IntegerType{} ? - value : value;
+    return value < IntegerType{} ? - value : value;
 }
 
 template<FloatingPoint FloatingPointType>
 constexpr FloatingPointType abs(const FloatingPointType value) noexcept {
-    return value == FloatingPointType{} ? FloatingPointType{} : value < FloatingPointType{} ? - value : value;
+    return value < FloatingPointType{} ? - value : value;
 }
 
 template<Complex ComplexType>
