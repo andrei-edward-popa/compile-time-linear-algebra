@@ -1,10 +1,11 @@
 CXX=g++
 EXE=test
-LD_FLAGS=-lfmt
+LD_FLAGS=-lfmt -lgtest
 INCLUDE=-Iinclude
 OBJ_FILES=$(CPP_FILES:.cpp=.o)
 CPP_FILES=$(shell find src/ -name "*.cpp")
-CXX_FLAGS=-std=c++2b -O3 -Wall -Wextra -Werror -Wpedantic -Wdeprecated
+D_FILES=$(CPP_FILES:.cpp=.d)
+CXX_FLAGS=-std=c++2b -O3 -Wall -Wextra -Werror -Wpedantic -Wdeprecated -Wconversion -flto=auto
 
 $(EXE): $(OBJ_FILES)
 	$(CXX) $^ $(INCLUDE) $(CXX_FLAGS) -o $@ $(LD_FLAGS)
@@ -13,9 +14,11 @@ $(EXE): $(OBJ_FILES)
 src/%.o: src/%.cpp
 	$(CXX) -MMD -c $< $(INCLUDE) $(CXX_FLAGS) -o $@ $(LD_FLAGS)
 
-.PHONY: clean
-clean:
+.PHONY: mrproper
+mrproper:
 	rm -f test
 	find src/ -name "*.o" | xargs rm -f
 	find src/ -name "*.d" | xargs rm -f
+	
+-include $(D_FILES)
 
