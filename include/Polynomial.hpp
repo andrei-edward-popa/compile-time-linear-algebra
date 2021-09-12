@@ -230,7 +230,7 @@ template<FloatingPoint FloatingPointType, std::size_t Degree>
 constexpr auto Polynomial<FloatingPointType, Degree>::operator==(const auto& rhs) const noexcept -> bool {
     if (Degree != rhs.getDegree()) return false;
     for (std::size_t index = 0; index <= Degree; index++) {
-        if (cte::math::abs(mCoeffs[index] - rhs[index]) > LIB_PRECISION) {
+        if (cte::math::abs(mCoeffs[index] - rhs[index]) > cte::math::precision<FloatingPointType>) {
             return false;
         }
 
@@ -257,7 +257,7 @@ template<FloatingPoint FloatingPointType, std::size_t Degree>
 constexpr std::array<std::complex<FloatingPointType>, Degree> Polynomial<FloatingPointType, Degree>::roots() const noexcept {
     std::array<std::complex<FloatingPointType>, Degree> z, w;
     std::complex<FloatingPointType> ratio, inverse_sum;
-    FloatingPointType error = LIB_PRECISION;
+    FloatingPointType error = cte::math::precision<FloatingPointType>;
     auto derivative = derivate();
     bool check = true;   
 

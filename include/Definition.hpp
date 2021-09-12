@@ -3,8 +3,6 @@
 #include <complex>
 #include <type_traits>
 
-#define LIB_PRECISION cte::math::pow(static_cast<long double>(10), -(PRECISION))
-
 template<typename... Types> void ignore(const Types&...) { }
 
 template<typename Type>

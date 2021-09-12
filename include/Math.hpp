@@ -53,5 +53,8 @@ constexpr auto abs(const ComplexType value) noexcept -> ComplexType::value_type 
     return cte::math::sqrt(static_cast<ComplexType::value_type>(value.real() * value.real() + value.imag() * value.imag()));
 }
 
+template<FloatingPoint FloatingPointType>
+constexpr FloatingPointType precision = cte::math::pow(static_cast<FloatingPointType>(10), -(PRECISION));
+
 }
 
