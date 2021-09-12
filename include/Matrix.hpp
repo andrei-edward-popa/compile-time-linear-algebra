@@ -2,6 +2,7 @@
 
 #include <array>
 #include <tuple>
+#include <limits>
 #include <cassert>
 #include <complex>
 
@@ -100,6 +101,8 @@ struct Matrix {
     constexpr auto operator*(const FloatingPointType& constant) const noexcept -> Matrix<FloatingPointType, Rows, Cols>;
     constexpr auto operator/(const FloatingPointType& constant) const noexcept -> Matrix<FloatingPointType, Rows, Cols>;
     constexpr auto operator^(const auto& rhs) const -> Matrix<std::common_type_t<FloatingPointType, typename std::remove_cvref_t<decltype(rhs)>::type>, Rows, Cols>;
+    constexpr auto operator==(const auto& rhs) const noexcept -> bool;
+    constexpr auto operator!=(const auto& rhs) const noexcept -> bool;
 
     constexpr void apply(auto&& callable);
     constexpr void apply(const std::size_t row, const std::size_t col, auto&& callable);
@@ -217,6 +220,24 @@ constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator^(const auto& rhs)
         }
     }
     return result;
+}
+
+template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
+constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator==(const auto& rhs) const noexcept -> bool {
+    if (Rows != rhs.getRows() || Cols != rhs.getCols()) return false;
+    for (std::size_t row = 0; row < Rows; row++) {
+        for (std::size_t col = 0; col < Cols; col++) {
+            if (cte::math::abs(mData[row][col] - rhs[row][col]) > 1e-4) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
+constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator!=(const auto& rhs) const noexcept -> bool {
+    return !(*this == rhs);
 }
 
 template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>

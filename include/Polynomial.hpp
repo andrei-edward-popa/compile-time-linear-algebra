@@ -82,8 +82,8 @@ struct Polynomial {
     constexpr auto operator/(const auto& rhs) const noexcept -> DivType<FloatingPointType, Degree, FloatingPointType, Degree>;
     constexpr auto operator*(const FloatingPointType& constant) const noexcept -> Polynomial<FloatingPointType, Degree>;
     constexpr auto operator/(const FloatingPointType& constant) const noexcept -> Polynomial<FloatingPointType, Degree>;
-    constexpr Polynomial& operator*=(const FloatingPointType constant) const noexcept;
-    constexpr Polynomial& operator/=(const FloatingPointType constant) const noexcept;
+	constexpr auto operator==(const auto& rhs) const noexcept -> bool;
+	constexpr auto operator!=(const auto& rhs) const noexcept -> bool;
 
     constexpr auto derivate() const noexcept -> Polynomial<FloatingPointType, static_cast<int16_t>(Degree) - 1 < 0 ? 0 : Degree - 1>;
     constexpr std::array<std::complex<FloatingPointType>, Degree> roots() const noexcept;
@@ -228,19 +228,20 @@ constexpr auto Polynomial<FloatingPointType, Degree>::operator/(const FloatingPo
 }
 
 template<FloatingPoint FloatingPointType, std::size_t Degree>
-constexpr Polynomial<FloatingPointType, Degree>& Polynomial<FloatingPointType, Degree>::operator*=(const FloatingPointType constant) const noexcept {
+constexpr auto Polynomial<FloatingPointType, Degree>::operator==(const auto& rhs) const noexcept -> bool {
+    if (Degree != rhs.getDegree()) return false;
     for (std::size_t index = 0; index <= Degree; index++) {
-        mCoeffs[index] = mCoeffs[index] * constant;
+        if (cte::math::abs(mCoeffs[index] - rhs[index]) > 1e-4) {
+            return false;
+        }
+
     }
-    return *this;
+    return true;
 }
 
 template<FloatingPoint FloatingPointType, std::size_t Degree>
-constexpr Polynomial<FloatingPointType, Degree>& Polynomial<FloatingPointType, Degree>::operator/=(const FloatingPointType constant) const noexcept {
-    for (std::size_t index = 0; index <= Degree; index++) {
-        mCoeffs[index] = mCoeffs[index] / constant;
-    }
-    return *this;
+constexpr auto Polynomial<FloatingPointType, Degree>::operator!=(const auto& rhs) const noexcept -> bool {
+    return !(*this == rhs);
 }
 
 template<FloatingPoint FloatingPointType, std::size_t Degree>
