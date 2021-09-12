@@ -6,37 +6,72 @@
 
 #include "Definition.hpp"
 
+constexpr auto precisionParser = []<typename ParseContext>(ParseContext& ctx, std::size_t& mPrecision) {
+    mPrecision = 0;
+    auto it = ctx.begin(), end = ctx.end();
+    if (it == end) return it;
+    std::size_t index = 0;
+    char precision[8];
+    if (*it++ == '.') {
+        while (*it != 'f') {
+            precision[index++] = *it++;
+        }
+    }
+    precision[index] = '\0';
+    for (int8_t i = static_cast<int8_t>(strlen(precision)) - 1; i >= 0; i--) {
+        mPrecision = 10 * mPrecision + (precision[i] - 48);
+    }
+    return ++it; 
+};
+
 template <FloatingPoint T>
 struct fmt::formatter<std::complex<T>> {
 
+    std::size_t mPrecision{};
+
     template <typename ParseContext>
     constexpr typename ParseContext::iterator parse(ParseContext& ctx) {
-        return ctx.begin(); 
+        return precisionParser(ctx, mPrecision);
     }
 
     template <typename FormatContext>
     constexpr auto format(const std::complex<T>& item, FormatContext& ctx) -> decltype(ctx.out()) {
-        if (item.imag() != T{0}) {
-            return fmt::format_to(ctx.out(), "{:+.4f}{:+.4f}*i", item.real(), item.imag());
+        if (mPrecision == 0) {
+            fmt::format_to(ctx.out(), "{}", item.real());
+            if (item.imag() != T{0}) {
+                return fmt::format_to(ctx.out(), "{:+}i", item.imag());
+            }
         } else {
-            return fmt::format_to(ctx.out(), "{:+.4f}", item.real());
+            fmt::format_to(ctx.out(), "{:.{}f}", item.real(), mPrecision);
+            if (item.imag() != T{0}) {
+                return fmt::format_to(ctx.out(), "{:+.{}f}i", item.imag(), mPrecision);
+            }
         }
+        return ctx.out();
     }
 };
 
 template <typename T, std::size_t N>
 struct fmt::formatter<std::array<T, N>> {
 
-    static constexpr const char* sExtension = std::is_floating_point_v<T> ? ", {:.4f}" : ", {}";
-    static constexpr const char* sFormatter = std::is_floating_point_v<T> ? "{:.4f}" : "{}";
+    std::size_t mPrecision{};
 
     template <typename ParseContext>
     constexpr typename ParseContext::iterator parse(ParseContext& ctx) {
-        return ctx.begin(); 
+        return precisionParser(ctx, mPrecision);
     }
 
     template <typename FormatContext, std::size_t... I>
     constexpr auto format_impl(const std::array<T, N>& item, FormatContext& ctx, std::index_sequence<I...>) -> decltype(ctx.out()) {
+        std::string sExtension{};
+        std::string sFormatter{};
+        if (mPrecision == 0) {
+            sExtension = ", {}";
+            sFormatter = "{}";
+        } else {
+            sExtension = ", {:." + std::to_string(mPrecision) + "f}";
+            sFormatter = "{:." + std::to_string(mPrecision) + "f}";
+        }
         std::string extension = std::string(sExtension);
         std::string formatter_string = std::string(sFormatter);
         std::size_t index = 0;
@@ -59,16 +94,24 @@ struct fmt::formatter<std::array<T, N>> {
 template <FloatingPoint T, std::size_t R, std::size_t C>
 struct fmt::formatter<cte::mat::Matrix<T, R, C>> {
 
-    static constexpr const char* sExtension = ",\n {}";
-    static constexpr const char* sFormatter = "{}";
+    std::size_t mPrecision{};
 
     template <typename ParseContext>
-    typename ParseContext::iterator parse(ParseContext& ctx) {
-        return ctx.begin(); 
+    constexpr typename ParseContext::iterator parse(ParseContext& ctx) {
+        return precisionParser(ctx, mPrecision);
     }
 
     template <typename FormatContext, std::size_t... I>
     constexpr auto format_impl(const cte::mat::Matrix<T, R, C>& item, FormatContext& ctx, std::index_sequence<I...>) -> decltype(ctx.out()) {
+        std::string sExtension{};
+        std::string sFormatter{};
+        if (mPrecision == 0) {
+            sExtension = ",\n {}";
+            sFormatter = "{}";
+        } else {
+            sExtension = ",\n {:." + std::to_string(mPrecision) + "f}";
+            sFormatter = "{:." + std::to_string(mPrecision) + "f}";
+        }
         std::string extension = std::string(sExtension);
         std::string formatter_string = std::string(sFormatter);
         std::size_t index = 0;
@@ -91,18 +134,28 @@ struct fmt::formatter<cte::mat::Matrix<T, R, C>> {
 template <FloatingPoint T, std::size_t N>
 struct fmt::formatter<cte::poly::Polynomial<T, N>> {
 
-    static constexpr const char* sExtension = std::is_floating_point_v<T> ? "{:+.4f}" : "{:+}";
+    std::size_t mPrecision{};
 
     template <typename ParseContext>
     constexpr typename ParseContext::iterator parse(ParseContext& ctx) {
-        return ctx.begin(); 
+        return precisionParser(ctx, mPrecision);
     }
 
     template <typename FormatContext, std::size_t... I>
     constexpr auto format_impl(const cte::poly::Polynomial<T, N>& item, FormatContext& ctx, std::index_sequence<I...>) -> decltype(ctx.out()) {
+        std::string sExtension{};
+        std::string sFormatter{};
+        if (mPrecision == 0) {
+            sExtension = "{:+}";
+            sFormatter = "{}";
+        } else {
+            sExtension = "{:+." + std::to_string(mPrecision) + "f}";
+            sFormatter = "{:." + std::to_string(mPrecision) + "f}";
+        }
         std::string extension = std::string(sExtension);
         std::string formatter_string{""};
         std::size_t index = 0;
+        formatter_string += fmt::format("{}*x^{}", sFormatter, N - index++);
         while(index <= item.getDegree()) {
             formatter_string += fmt::format("{}*x^{}", extension, N - index++);
         }

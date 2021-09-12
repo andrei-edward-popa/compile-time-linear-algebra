@@ -1,9 +1,10 @@
 #include <fmt/format.h>
+#include <gtest/gtest.h>
 
 #include "Matrix.hpp"
 #include "Polynomial.hpp"
 
-int main() {
+int main(int argc, char* argv[]) {
 
     constexpr cte::mat::Matrix singular{ { 1.0l, 2.0l, 3.0l }, { 4.0l, 5.0l, 6.0l }, { 7.0l, 8.0l, 9.0l } };
     constexpr cte::mat::Matrix non_singular{ { 1.0l, 2.0l, 3.0l }, { 4.0l, 5.0l, 6.0l }, { 7.0l, 8.0l, 8.0l } };
@@ -39,33 +40,35 @@ int main() {
 
     ignore(add, hadamard, product, concat);
 
-    fmt::print("The inverse matrix of\n{}\n", non_singular);
-    fmt::print("is the following matrix:\n{}\n", inverse);
+    fmt::print("The inverse matrix of\n{:.4f}\n", non_singular);
+    fmt::print("is the following matrix:\n{:.4f}\n", inverse);
     fmt::print("and the value of the determinant is: \n");
     fmt::print("{:.4f}\n\n", non_singular.determinant());
 
     fmt::print("QR decomposition of the matrix:\n");
-    fmt::print("{}\n", QR_test_matrix);
+    fmt::print("{:.4f}\n", QR_test_matrix);
     fmt::print("is the following:\n");
-    fmt::print("Q:\n{}\nR:\n{}\n", Q, R);
+    fmt::print("Q:\n{:.4f}\nR:\n{:.4f}\n", Q, R);
 
-    fmt::print("Roots of the polynomial {} are:\n", fifth);
-    fmt::print("{}\n", roots);
+    fmt::print("Roots of the polynomial {:.4f} are:\n", fifth);
+    fmt::print("{:.4f}\n", roots);
 
     fmt::print("\nGiven polynomial functions:\n");
-    fmt::print("p1: {}\np2: {}\n", p1, p2);
+    fmt::print("p1: {:.4f}\np2: {:.4f}\n", p1, p2);
     fmt::print("we can do the following operations:\n");
-    fmt::print("Adition: {}\n", p3);
-    fmt::print("Subtraction: {}\n", p4);
-    fmt::print("Multiplication: {}\n", p5);
-    fmt::print("Division: Q: {}\n", p6);
-    fmt::print("          R: {}\n\n", p7);
+    fmt::print("Adition: {:.4f}\n", p3);
+    fmt::print("Subtraction: {:.4f}\n", p4);
+    fmt::print("Multiplication: {:.4f}\n", p5);
+    fmt::print("Division: Q: {:.4f}\n", p6);
+    fmt::print("          R: {:.4f}\n\n", p7);
 
-    fmt::print("Eigenvalues of matrix:\n{}\nare:\n", eigen_test);
-    fmt::print("{}\n", eigenvalues);
+    fmt::print("Eigenvalues of matrix:\n{:.4f}\nare:\n", eigen_test);
+    fmt::print("{:.4f}\n", eigenvalues);
     fmt::print("and eigenvectors are:\n");
-    fmt::print("{}\n", eigenvectors);
+    fmt::print("{:.4f}\n", eigenvectors);
 
-    return 0;
+	::testing::InitGoogleTest(&argc, argv);
+	return RUN_ALL_TESTS();
+
 }
 
