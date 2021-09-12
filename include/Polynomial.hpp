@@ -91,7 +91,6 @@ struct Polynomial {
 
 public:
     std::array<FloatingPointType, Degree + 1> mCoeffs;
-    constexpr static int8_t sPrecision = 4;
 };
 
 template<FloatingPoint NT1, std::size_t D1, FloatingPoint NT2, std::size_t D2>
@@ -231,7 +230,7 @@ template<FloatingPoint FloatingPointType, std::size_t Degree>
 constexpr auto Polynomial<FloatingPointType, Degree>::operator==(const auto& rhs) const noexcept -> bool {
     if (Degree != rhs.getDegree()) return false;
     for (std::size_t index = 0; index <= Degree; index++) {
-        if (cte::math::abs(mCoeffs[index] - rhs[index]) > 1e-4) {
+        if (cte::math::abs(mCoeffs[index] - rhs[index]) > LIB_PRECISION) {
             return false;
         }
 
@@ -258,7 +257,7 @@ template<FloatingPoint FloatingPointType, std::size_t Degree>
 constexpr std::array<std::complex<FloatingPointType>, Degree> Polynomial<FloatingPointType, Degree>::roots() const noexcept {
     std::array<std::complex<FloatingPointType>, Degree> z, w;
     std::complex<FloatingPointType> ratio, inverse_sum;
-    FloatingPointType error = cte::math::pow(FloatingPointType{10}, -sPrecision);
+    FloatingPointType error = LIB_PRECISION;
     auto derivative = derivate();
     bool check = true;   
 

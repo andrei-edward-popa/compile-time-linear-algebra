@@ -227,7 +227,7 @@ constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator==(const auto& rhs
     if (Rows != rhs.getRows() || Cols != rhs.getCols()) return false;
     for (std::size_t row = 0; row < Rows; row++) {
         for (std::size_t col = 0; col < Cols; col++) {
-            if (cte::math::abs(mData[row][col] - rhs[row][col]) > 1e-4) {
+            if (cte::math::abs(mData[row][col] - rhs[row][col]) > LIB_PRECISION) {
                 return false;
             }
         }
