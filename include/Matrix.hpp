@@ -63,8 +63,8 @@ struct Matrix {
 
     template<FloatingPoint OtherNumberType, std::size_t OtherRows, std::size_t OtherCols>
     constexpr operator Matrix<OtherNumberType, OtherRows, OtherCols>() const & {
-        if (Rows != OtherRows) throw cte::DimensionMismatchException("Invalid assign, matrices have different FloatingPoint of rows", Rows, OtherRows);
-        if (Cols != OtherCols) throw cte::DimensionMismatchException("Invalid assign, matrices have different FloatingPoint of columns", Cols, OtherCols);
+        if (Rows != OtherRows) throw cte::DimensionMismatchException("Invalid assign, matrices have different number of rows", Rows, OtherRows);
+        if (Cols != OtherCols) throw cte::DimensionMismatchException("Invalid assign, matrices have different number of columns", Cols, OtherCols);
         Matrix<std::common_type_t<FloatingPointType, OtherNumberType>, Rows, Cols> result;
         for (std::size_t row = 0; row < Rows; row++) {
             for (std::size_t col = 0; col < Cols; col++) {
@@ -76,8 +76,8 @@ struct Matrix {
 
     template<FloatingPoint OtherNumberType, std::size_t OtherRows, std::size_t OtherCols>
     constexpr operator Matrix<OtherNumberType, OtherRows, OtherCols>() && {
-        if (Rows != OtherRows) throw cte::DimensionMismatchException("Invalid assign, matrices have different FloatingPoint of rows", Rows, OtherRows);
-        if (Cols != OtherCols) throw cte::DimensionMismatchException("Invalid assign, matrices have different FloatingPoint of columns", Cols, OtherCols);
+        if (Rows != OtherRows) throw cte::DimensionMismatchException("Invalid assign, matrices have different number of rows", Rows, OtherRows);
+        if (Cols != OtherCols) throw cte::DimensionMismatchException("Invalid assign, matrices have different number of columns", Cols, OtherCols);
         Matrix<std::common_type_t<FloatingPointType, OtherNumberType>, Rows, Cols> result;
         for (std::size_t row = 0; row < Rows; row++) {
             for (std::size_t col = 0; col < Cols; col++) {
@@ -100,7 +100,11 @@ struct Matrix {
     constexpr auto operator*(const auto& rhs) const -> Matrix<std::common_type_t<FloatingPointType, typename std::remove_cvref_t<decltype(rhs)>::type>, Rows, std::remove_cvref_t<decltype(rhs)>::getCols()>;
     constexpr auto operator*(const FloatingPointType& constant) const noexcept -> Matrix<FloatingPointType, Rows, Cols>;
     constexpr auto operator/(const FloatingPointType& constant) const noexcept -> Matrix<FloatingPointType, Rows, Cols>;
+    constexpr auto operator*=(const FloatingPointType& constant) noexcept -> Matrix<FloatingPointType, Rows, Cols>&;
+    constexpr auto operator/=(const FloatingPointType& constant) noexcept -> Matrix<FloatingPointType, Rows, Cols>&;
     constexpr auto operator^(const auto& rhs) const -> Matrix<std::common_type_t<FloatingPointType, typename std::remove_cvref_t<decltype(rhs)>::type>, Rows, Cols>;
+    constexpr auto operator^(const Integer auto power) const -> Matrix<FloatingPointType, Rows, Cols>;
+    constexpr auto operator^=(const Integer auto power) -> Matrix<FloatingPointType, Rows, Cols>&;
     constexpr auto operator==(const auto& rhs) const noexcept -> bool;
     constexpr auto operator!=(const auto& rhs) const noexcept -> bool;
 
@@ -146,8 +150,8 @@ private:
 template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
 constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator+(const auto& rhs) const -> Matrix<std::common_type_t<FloatingPointType, typename std::remove_cvref_t<decltype(rhs)>::type>, Rows, Cols> {
     using remove_cvref_rhs = typename std::remove_cvref_t<decltype(rhs)>::type;
-    if (Rows != rhs.getRows()) throw cte::DimensionMismatchException("Invalid addition, matrices have different FloatingPoint of rows", Rows, rhs.getRows());
-    if (Cols != rhs.getCols()) throw cte::DimensionMismatchException("Invalid addition, matrices have different FloatingPoint of columns", Cols, rhs.getCols());
+    if (Rows != rhs.getRows()) throw cte::DimensionMismatchException("Invalid addition, matrices have different number of rows", Rows, rhs.getRows());
+    if (Cols != rhs.getCols()) throw cte::DimensionMismatchException("Invalid addition, matrices have different number of columns", Cols, rhs.getCols());
     Matrix<std::common_type_t<FloatingPointType, remove_cvref_rhs>, Rows, Cols> result;
     for (std::size_t row = 0; row < Rows; row++) {
         for (std::size_t col = 0; col < Cols; col++) {
@@ -160,8 +164,8 @@ constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator+(const auto& rhs)
 template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
 constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator-(const auto& rhs) const -> Matrix<std::common_type_t<FloatingPointType, typename std::remove_cvref_t<decltype(rhs)>::type>, Rows, Cols> {
     using remove_cvref_rhs = typename std::remove_cvref_t<decltype(rhs)>::type;
-    if (Rows != rhs.getRows()) throw cte::DimensionMismatchException("Invalid subtraction, matrices have different FloatingPoint of rows", Rows, rhs.getRows());
-    if (Cols != rhs.getCols()) throw cte::DimensionMismatchException("Invalid subtraction, matrices have different FloatingPoint of columns", Cols, rhs.getCols());
+    if (Rows != rhs.getRows()) throw cte::DimensionMismatchException("Invalid subtraction, matrices have different number of rows", Rows, rhs.getRows());
+    if (Cols != rhs.getCols()) throw cte::DimensionMismatchException("Invalid subtraction, matrices have different number of columns", Cols, rhs.getCols());
     Matrix<std::common_type_t<FloatingPointType, remove_cvref_rhs>, Rows, Cols> result;
     for (std::size_t row = 0; row < Rows; row++) {
         for (std::size_t col = 0; col < Cols; col++) {
@@ -173,7 +177,7 @@ constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator-(const auto& rhs)
 
 template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
 constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator*(const auto& rhs) const -> Matrix<std::common_type_t<FloatingPointType, typename std::remove_cvref_t<decltype(rhs)>::type>, Rows, std::remove_cvref_t<decltype(rhs)>::getCols()> {
-    if (Cols != rhs.getRows()) throw cte::DimensionMismatchException("Invalid multiplication, first matrix has different FloatingPoint of columns than FloatingPoint of rows of second matrix", Cols, rhs.getRows());
+    if (Cols != rhs.getRows()) throw cte::DimensionMismatchException("Invalid multiplication, first matrix has different number of columns than number of rows of second matrix", Cols, rhs.getRows());
     Matrix<FloatingPointType, Rows, rhs.getCols()> result;
     for(std::size_t row = 0; row < Rows; row++) {
         for(std::size_t col = 0; col < rhs.getCols(); col++) {
@@ -209,10 +213,30 @@ constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator/(const FloatingPo
 }
 
 template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
+constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator*=(const FloatingPointType& constant) noexcept -> Matrix<FloatingPointType, Rows, Cols>& {
+    for(std::size_t row = 0; row < Rows; row++) {
+        for(std::size_t col = 0; col < Cols; col++) {
+            mData[row][col] *= constant;
+        }
+    }
+    return *this;
+}
+
+template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
+constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator/=(const FloatingPointType& constant) noexcept -> Matrix<FloatingPointType, Rows, Cols>& {
+    for(std::size_t row = 0; row < Rows; row++) {
+        for(std::size_t col = 0; col < Cols; col++) {
+            mData[row][col] /= constant;
+        }
+    }
+    return *this;
+}
+
+template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
 constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator^(const auto& rhs) const -> Matrix<std::common_type_t<FloatingPointType, typename std::remove_cvref_t<decltype(rhs)>::type>, Rows, Cols> {
     using remove_cvref_rhs = typename std::remove_cvref_t<decltype(rhs)>::type;
-    if (Rows != rhs.getRows()) throw cte::DimensionMismatchException("Invalid Hadamard multiplication, matrices have different FloatingPoint of rows", Rows, rhs.getRows());
-    if (Cols != rhs.getCols()) throw cte::DimensionMismatchException("Invalid Hadamard multiplication, matrices have different FloatingPoint of columns", Cols, rhs.getCols());
+    if (Rows != rhs.getRows()) throw cte::DimensionMismatchException("Invalid Hadamard multiplication, matrices have different number of rows", Rows, rhs.getRows());
+    if (Cols != rhs.getCols()) throw cte::DimensionMismatchException("Invalid Hadamard multiplication, matrices have different number of columns", Cols, rhs.getCols());
     Matrix<std::common_type_t<FloatingPointType, remove_cvref_rhs>, Rows, Cols> result;
     for(std::size_t row = 0; row < Rows; row++) {
         for(std::size_t col = 0; col < Cols; col++) {
@@ -220,6 +244,49 @@ constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator^(const auto& rhs)
         }
     }
     return result;
+}
+
+template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
+constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator^(const Integer auto power) const -> Matrix<FloatingPointType, Rows, Cols> {
+    if (Rows != Cols) throw cte::DimensionMismatchException("Invalid power, matrix has different dimensions", Rows, Cols);
+    if (power < 0) throw cte::DimensionMismatchException("You cannot compute matrix to a negative power", power, power);
+    if (power == 0) {
+    	Matrix identity;
+    	identity.apply([](const FloatingPointType) {
+    		return FloatingPointType{0};
+    	});
+    	for (std::size_t i = 0; i < Rows; i++) {
+    		identity.apply(i, i, [](const FloatingPointType){
+    			return FloatingPointType{1};
+    		});
+    	}
+    	return identity;
+    } else {
+    	Matrix<FloatingPointType, Rows, Cols> result = *this;
+		for(std::decay_t<decltype(power)> i = 0; i < power - 1; i++) {
+			result = result * (*this);
+		}
+		return result;
+    }
+}
+
+template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
+constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator^=(const Integer auto power) -> Matrix<FloatingPointType, Rows, Cols>& {
+    if (Rows != Cols) throw cte::DimensionMismatchException("Invalid power, matrix has different dimensions", Rows, Cols);
+    if (power < 0) throw cte::DimensionMismatchException("You cannot compute matrix to a negative power", power, power);
+    if (power == 0) {
+    	for (std::size_t row = 0; row < Rows; row++) {
+    		for (std::size_t col = 0; col < Cols; col++) {
+    			mData[row][col] = row == col ? FloatingPointType{1} : FloatingPointType{0};
+    		}
+    	}
+    } else {
+    	Matrix<FloatingPointType, Rows, Cols> copy = *this;
+		for(std::decay_t<decltype(power)> i = 0; i < power - 1; i++) {
+			*this = (*this) * copy;
+		}
+    }
+    return *this;
 }
 
 template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
@@ -377,8 +444,8 @@ constexpr Matrix<FloatingPointType, Cols, Rows> Matrix<FloatingPointType, Rows, 
 template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
 constexpr auto Matrix<FloatingPointType, Rows, Cols>::concatenateRows(const auto& rhs) const -> decltype(auto) {
     using remove_cvref_rhs = std::remove_cvref_t<decltype(rhs)>;
-    if (Cols != remove_cvref_rhs::getCols()) throw cte::DimensionMismatchException("Invalid rows concatenation, matrices have different FloatingPoint of columns", Cols, remove_cvref_rhs::getCols());
-    Matrix<FloatingPointType, Rows + remove_cvref_rhs::getCols(), Cols> result;
+    if (Cols != remove_cvref_rhs::getCols()) throw cte::DimensionMismatchException("Invalid rows concatenation, matrices have different number of columns", Cols, remove_cvref_rhs::getCols());
+    Matrix<FloatingPointType, Rows + remove_cvref_rhs::getRows(), Cols> result;
     for (std::size_t row = 0; row < Rows; row++) {
         for (std::size_t col = 0; col < Cols; col++) {
             result[row][col] = mData[row][col];
@@ -395,7 +462,7 @@ constexpr auto Matrix<FloatingPointType, Rows, Cols>::concatenateRows(const auto
 template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
 constexpr auto Matrix<FloatingPointType, Rows, Cols>::concatenateCols(const auto& rhs) const -> decltype(auto) {
     using remove_cvref_rhs = std::remove_cvref_t<decltype(rhs)>;
-    if (Rows != remove_cvref_rhs::getRows()) throw cte::DimensionMismatchException("Invalid columns concatenation, matrices have different FloatingPoint of rows", Rows, remove_cvref_rhs::getRows());
+    if (Rows != remove_cvref_rhs::getRows()) throw cte::DimensionMismatchException("Invalid columns concatenation, matrices have different number of rows", Rows, remove_cvref_rhs::getRows());
     Matrix<FloatingPointType, Rows, Cols + remove_cvref_rhs::getCols()> result;
     for (std::size_t row = 0; row < Rows; row++) {
         for (std::size_t col = 0; col < Cols; col++) {

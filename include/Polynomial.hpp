@@ -82,6 +82,8 @@ struct Polynomial {
     constexpr auto operator/(const auto& rhs) const noexcept -> DivType<FloatingPointType, Degree, FloatingPointType, Degree>;
     constexpr auto operator*(const FloatingPointType& constant) const noexcept -> Polynomial<FloatingPointType, Degree>;
     constexpr auto operator/(const FloatingPointType& constant) const noexcept -> Polynomial<FloatingPointType, Degree>;
+    constexpr auto operator*=(const FloatingPointType& constant) noexcept -> Polynomial<FloatingPointType, Degree>&;
+    constexpr auto operator/=(const FloatingPointType& constant) noexcept -> Polynomial<FloatingPointType, Degree>&;
 	constexpr auto operator==(const auto& rhs) const noexcept -> bool;
 	constexpr auto operator!=(const auto& rhs) const noexcept -> bool;
 
@@ -224,6 +226,22 @@ constexpr auto Polynomial<FloatingPointType, Degree>::operator/(const FloatingPo
         result[index] = mCoeffs[index] / constant;
     }
     return result;
+}
+
+template<FloatingPoint FloatingPointType, std::size_t Degree>
+constexpr auto Polynomial<FloatingPointType, Degree>::operator*=(const FloatingPointType& constant) noexcept -> Polynomial<FloatingPointType, Degree>& {
+    for (std::size_t index = 0; index <= Degree; index++) {
+        mCoeffs[index] *= constant;
+    }
+    return *this;
+}
+
+template<FloatingPoint FloatingPointType, std::size_t Degree>
+constexpr auto Polynomial<FloatingPointType, Degree>::operator/=(const FloatingPointType& constant) noexcept -> Polynomial<FloatingPointType, Degree>& {
+    for (std::size_t index = 0; index <= Degree; index++) {
+        mCoeffs[index] /= constant;
+    }
+    return *this;
 }
 
 template<FloatingPoint FloatingPointType, std::size_t Degree>
