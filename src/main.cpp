@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
     constexpr cte::mat::Matrix concat = product.concatenateCols(singular);
     constexpr cte::mat::Matrix inverse = non_singular.inverse();
 
-    constexpr cte::mat::Matrix QR_test_matrix = { { 12.0l, -51.0l, 4.0l }, { 6.0l, 167.0l, -68.0l }, { -4.0l, 24.0l, -41.0l } };
+    constexpr cte::mat::Matrix QR_test_matrix{ { 12.0l, -51.0l, 4.0l }, { 6.0l, 167.0l, -68.0l }, { -4.0l, 24.0l, -41.0l } };
     constexpr auto QR = QR_test_matrix.QRDecomposition();
     constexpr auto Q = QR.getOrthogonal();
     constexpr auto R = QR.getUpperTriangular();
