@@ -249,7 +249,7 @@ constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator^(const auto& rhs)
 template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
 constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator^(const Integer auto power) const -> Matrix<FloatingPointType, Rows, Cols> {
     if (Rows != Cols) throw cte::DimensionMismatchException("Invalid power, matrix has different dimensions", Rows, Cols);
-    if (power < 0) throw cte::DimensionMismatchException("You cannot compute matrix to a negative power", power, power);
+    if (power < 0) throw cte::CustomMessageException("You cannot compute matrix to a negative power.");
     if (power == 0) {
     	Matrix identity;
     	identity.apply([](const FloatingPointType) {
@@ -273,7 +273,7 @@ constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator^(const Integer au
 template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
 constexpr auto Matrix<FloatingPointType, Rows, Cols>::operator^=(const Integer auto power) -> Matrix<FloatingPointType, Rows, Cols>& {
     if (Rows != Cols) throw cte::DimensionMismatchException("Invalid power, matrix has different dimensions", Rows, Cols);
-    if (power < 0) throw cte::DimensionMismatchException("You cannot compute matrix to a negative power", power, power);
+    if (power < 0) throw cte::CustomMessageException("You cannot compute matrix to a negative power.");
     if (power == 0) {
     	for (std::size_t row = 0; row < Rows; row++) {
     		for (std::size_t col = 0; col < Cols; col++) {
@@ -325,7 +325,7 @@ constexpr void Matrix<FloatingPointType, Rows, Cols>::apply(const std::size_t ro
 
 template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
 constexpr FloatingPointType Matrix<FloatingPointType, Rows, Cols>::norm() const {
-    if (Rows != 1UL && Cols != 1UL) throw cte::DimensionMismatchException("Invalid norm, row or column matrix needed", Rows, Cols);
+    if (Rows != 1UL && Cols != 1UL) throw cte::CustomMessageException("Invalid norm, row or column matrix needed.");
     FloatingPointType result = FloatingPointType{0};
     for (std::size_t row = 0; row < Rows; row++) {
         for (std::size_t col = 0; col < Cols; col++) {
@@ -390,7 +390,7 @@ constexpr std::complex<FloatingPointType> determinant(const std::array<std::arra
 template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
 constexpr Matrix<FloatingPointType, Rows, Cols> Matrix<FloatingPointType, Rows, Cols>::inverse() const {
     if (Rows != Cols) throw cte::DimensionMismatchException("Invalid inverse, matrix has different dimensions", Rows, Cols);
-    if (this->determinant() == FloatingPointType{0}) throw cte::DimensionMismatchException("Invalid inverse, matrix is singular", Rows, Cols);
+    if (this->determinant() == FloatingPointType{0}) throw cte::CustomMessageException("Invalid inverse, matrix is singular.");
     FloatingPointType pivot;
     Matrix<FloatingPointType, Rows, Cols> result;
     
@@ -502,6 +502,7 @@ constexpr std::array<Matrix<FloatingPointType, Rows, 1>, Cols> Matrix<FloatingPo
 template<FloatingPoint FloatingPointType, std::size_t Rows, std::size_t Cols>
 constexpr auto Matrix<FloatingPointType, Rows, Cols>::QRDecomposition() const -> QRType<FloatingPointType, Rows, Cols, FloatingPointType, Cols, Cols> {
     if (Rows != Cols) throw cte::DimensionMismatchException("Invalid QR decomposition, matrix has different dimensions", Rows, Cols);
+    if (this->determinant() == FloatingPointType{0}) throw cte::CustomMessageException("Vectors are not linearly independent.");
     std::array<Matrix<FloatingPointType, Rows, 1>, Cols> columns = splitCols();
     std::array<Matrix<FloatingPointType, Rows, 1>, Cols> new_columns;
     Matrix<FloatingPointType, Rows, Cols> Q;
@@ -509,7 +510,7 @@ constexpr auto Matrix<FloatingPointType, Rows, Cols>::QRDecomposition() const ->
     for (std::size_t col = 0; col < Cols; col++) {
         new_columns[col] = columns[col];
         for (std::size_t index = 0; index < col; index++) {
-            coeff = (new_columns[index].transpose() * columns[col])[0][0] / (new_columns[index].transpose() * new_columns[index])[0][0];
+            coeff = (new_columns[index].transpose() * new_columns[col])[0][0] / cte::math::pow(new_columns[index].norm(), 2);
             new_columns[col] = new_columns[col] - new_columns[index] * coeff;
         }
     }
@@ -545,7 +546,7 @@ Matrix<uint16_t, N, N - 1> linearEquationMapping() {
 template<FloatingPoint FloatingPointType, std::size_t Size>
 constexpr std::array<std::complex<FloatingPointType>, Size> solveDeterminateSystem(const std::array<std::array<std::complex<FloatingPointType>, Size>, Size>& coeffs, const std::array<std::complex<FloatingPointType>, Size>& freeTerms) {
     std::complex<FloatingPointType> determ = determinant(coeffs);
-    if (determ == std::complex<FloatingPointType>{0}) throw cte::DimensionMismatchException("System is not determinate because determinant is equal to 0", Size, Size);
+    if (determ == std::complex<FloatingPointType>{0}) throw cte::CustomMessageException("System is not determinate because determinant is equal to 0.");
     std::array<std::complex<FloatingPointType>, Size> solutions;
     std::array<std::array<std::complex<FloatingPointType>, Size>, Size> new_coeffs;
     for (std::size_t index = 0; index < Size; index++) {
@@ -566,7 +567,7 @@ constexpr std::array<std::complex<FloatingPointType>, Size> solveDeterminateSyst
 template<FloatingPoint FloatingPointType, std::size_t Size>
 constexpr std::array<FloatingPointType, Size> solveDeterminateSystem(const Matrix<FloatingPointType, Size, Size>& coeffs, const std::array<FloatingPointType, Size> freeTerms) {
     FloatingPointType determ = coeffs.determinant();
-    if (determ == FloatingPointType{0}) throw cte::DimensionMismatchException("System is not determinate because determinant is equal to 0", Size, Size);
+    if (determ == FloatingPointType{0}) throw cte::CustomMessageException("System is not determinate because determinant is equal to 0.");
     std::array<FloatingPointType, Size> solutions;
     Matrix<FloatingPointType, Size, Size> new_matrix;
     for (std::size_t index = 0; index < Size; index++) {

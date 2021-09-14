@@ -37,5 +37,18 @@ private:
     inline static std::string eMessage = "Index out of range: ";
 };
 
+struct CustomMessageException : std::exception {
+
+    CustomMessageException(const std::string& message) 
+        : eMessage(message) {}
+
+    virtual const char* what() const noexcept override {
+        return eMessage.c_str();
+    }
+
+private:
+    std::string eMessage;
+};
+
 }
 
