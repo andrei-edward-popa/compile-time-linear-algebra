@@ -1,10 +1,9 @@
 #include <fmt/format.h>
-#include <gtest/gtest.h>
 
 #include "Matrix.hpp"
 #include "Polynomial.hpp"
 
-int main(int argc, char* argv[]) {
+int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
     constexpr cte::mat::Matrix singular{ { 1.0l, 2.0l, 3.0l }, { 4.0l, 5.0l, 6.0l }, { 7.0l, 8.0l, 9.0l } };
     constexpr cte::mat::Matrix non_singular{ { 1.0l, 2.0l, 3.0l }, { 4.0l, 5.0l, 6.0l }, { 7.0l, 8.0l, 8.0l } };
@@ -67,8 +66,7 @@ int main(int argc, char* argv[]) {
     fmt::print("and eigenvectors are:\n");
     fmt::print("{:.4f}\n", eigenvectors);
 
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
+	return EXIT_SUCCESS;
 
 }
 

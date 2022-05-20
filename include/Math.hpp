@@ -32,8 +32,8 @@ constexpr ComplexType pow(const ComplexType base, const IntegerType exponent) no
 
 template<FloatingPoint FloatingPointType>
 constexpr FloatingPointType sqrt(FloatingPointType value) noexcept {
-    constexpr auto sqrtNewtonRaphson = [](const auto sqrtNewtonRaphson, FloatingPointType value, FloatingPointType current, FloatingPointType previous) -> FloatingPointType {
-        return current == previous ? current : sqrtNewtonRaphson(sqrtNewtonRaphson, value, 0.5 * (current + value / current), current);
+    constexpr auto sqrtNewtonRaphson = [](const auto lsqrtNewtonRaphson, FloatingPointType lvalue, FloatingPointType current, FloatingPointType previous) -> FloatingPointType {
+        return current == previous ? current : lsqrtNewtonRaphson(lsqrtNewtonRaphson, lvalue, 0.5 * (current + lvalue / current), current);
     };
     return value >= 0 && value < std::numeric_limits<FloatingPointType>::infinity() ? sqrtNewtonRaphson(sqrtNewtonRaphson, value, value, 0) : std::numeric_limits<FloatingPointType>::quiet_NaN();
 }
